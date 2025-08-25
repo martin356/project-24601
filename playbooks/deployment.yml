@@ -1,0 +1,11 @@
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    global_vars:
+      infra_dir: '{{ playbook_dir }}/../infra'
+  tasks:
+    - name: Deploy VMs
+      ansible.builtin.include_tasks: tasks/terraform_deploy.yml
+      vars:
+        component: vm-cluster

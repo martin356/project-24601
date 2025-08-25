@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${name}-html
+  namespace: ${namespace}
+binaryData:
+  index.html: "${index_html_b64}"

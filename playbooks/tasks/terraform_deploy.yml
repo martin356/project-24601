@@ -1,0 +1,21 @@
+- name: Validate inputs
+  ansible.builtin.assert:
+    that:
+      - component is defined
+      - component | trim | length > 1
+    fail_msg: Input variable "component" with length >1 is required.
+
+
+- name: Terraform Init
+  vars:
+    ansible_failed_task_message: 'Custom fail: {{ init_out.stderr_lines }}'
+  ansible.builtin.shell: |
+    terraform -chdir="{{ global_vars.infra_dir }}/{{ component }}/tf" init
+  register: init_out
+
+
+# - name: Fail on Terraform Init error
+#   when: init_out.stderr_lines | length > 0
+#   ansible.builtin.fail:
+#     msg: 'Errors: {{ init_out.stderr_lines | join("; ") }}'
+
