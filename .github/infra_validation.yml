@@ -1,0 +1,28 @@
+name: Infrastructure validation
+run-name: Infrastructure validation ${{ github.run_id }}-${{ github.run_attempt }}
+
+
+on:
+  push:
+    paths:
+      - infra/**
+      - .github/**
+    branches-ignore:
+      - main
+
+
+jobs:
+  validate_terraform:
+    name: TFsec
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout select repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Terraform static analysis
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: infra
+          soft_fail: true
