@@ -21,3 +21,5 @@ run init to update kubernetes provider when vms change
 master node sometimes freezes after k3s installation - probably weak vm cfg (because of my laptop weak params)
 
 DELETE playbooks - used no more
+
+gitguardian - 3rd party platform
