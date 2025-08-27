@@ -1,0 +1,78 @@
+name: Terraform docs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches:
+      - main
+
+jobs:
+  validate_terraform:
+    name: TFsec validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout select repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Terraform static analysis
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          working_directory: infra
+          soft_fail: true
+
+  tf_docs:
+    name: Generate terraform documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # needed so the action can push doc updates
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+
+      - name: Configure git author
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Generate tf docs (vm-cluster)
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: ./infra/vm-cluster/tf
+          recursive: false
+          # config-file: terraform-docs.yaml
+          output-file: ../README.md
+          output-method: inject
+          git-push: "false"
+
+      - name: Generate tf docs (vms-init)
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: ./infra/vms-init/tf
+          recursive: false
+          # config-file: terraform-docs.yaml
+          output-file: ../README.md
+          output-method: inject
+          git-push: "false"
+
+      - name: Generate tf docs (kubernetes)
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: ./infra/kubernetes/tf
+          recursive: false
+          # config-file: terraform-docs.yaml
+          output-file: ../README.md
+          output-method: inject
+          git-push: "false"
+
+      - name: Commit updedted documentation
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: update generated files" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }}

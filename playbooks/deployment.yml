@@ -1,11 +1,48 @@
-- hosts: localhost
+---
+- name: Infrastructure deployment
+  hosts: localhost
   connection: local
   gather_facts: false
+
+
+  vars_prompt:
+    - name: network_cidr
+      prompt: "CIDR for libvirt network interface"
+      private: no
+      default: 192.168.130.0/24
+
+    - name: gh_runner_reg_token
+      prompt: "Github runner registration token. Leave empty in case the runner registration is not required"
+      private: no
+      default: ''
+
+
   vars:
-    global_vars:
-      infra_dir: '{{ playbook_dir }}/../infra'
+    projects:
+      - name: vm-cluster
+        path: ../infra/vm-cluster/tf
+      - name: vms-init
+        path: ../infra/vms-init/tf
+      - name: kubernetes
+        path: ../infra/kubernetes/tf
+    artifacts_root: .ansible-tf
+    artifacts_root_abs: "{{ playbook_dir }}/{{ artifacts_root }}"
+    tf_env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_env: dev
+      TF_VAR_network_cidr: "{{ network_cidr }}"
+      TF_VAR_github_runner_registration_token: "{{ gh_runner_reg_token }}"
+
+
   tasks:
-    - name: Deploy VMs
+    - name: Ensure artifacts root exists
+      ansible.builtin.file:
+        path: "{{ artifacts_root_abs }}"
+        state: directory
+        mode: "0755"
+
+    - name: Process each Terraform project (dynamic include)
       ansible.builtin.include_tasks: tasks/terraform_deploy.yml
-      vars:
-        component: vm-cluster
+      loop: "{{ projects }}"
+      loop_control:
+        loop_var: proj

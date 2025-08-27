@@ -4,6 +4,7 @@ locals {
 
 
 output "k3s_cers" {
+  description = "Certicates exported from the kubeconfig"
   value = {
     client_certificate     = local.kubeconfig.users[0].user["client-certificate-data"]
     client_key             = local.kubeconfig.users[0].user["client-key-data"]

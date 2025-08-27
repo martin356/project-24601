@@ -4,6 +4,7 @@ locals {
     "vms-init"
   ]
 
+  tf_states_dir = abspath("${path.module}/../.tfstates")
   tf_states = {
     for p in local.projects : p => "../../.tfstates/${p}-${var.env}.tfstate"
   }
@@ -13,4 +14,6 @@ locals {
   resource_name_prefix = "${var.project}-${var.env}"
 
   k3s_version = "v1.32.7+k3s1"
+
+  base_domain = "theproject"
 }

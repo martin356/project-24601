@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -euo pipefail
+
+MACHINES="$(printf '%s' '${base64encode(machines)}' | base64 -d)"
+SEPARATOR=","
+
+IFS="$SEPARATOR" read -ra machines_list <<< "$MACHINES"
+
+for m in "$${machines_list[@]}"; do
+    echo "Shutdown $m"
+    virsh -c qemu:///system shutdown $m
+done

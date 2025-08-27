@@ -1,7 +1,7 @@
 locals {
   output_vms = {
     for name, vm in module.vm : name => {
-      is_master = try(local.vms[name].is_master, false)
+      type = local.vms[name].type
       network = {
         id                = vm.id
         network_interface = vm.network_interface
@@ -17,15 +17,24 @@ locals {
 
 
 output "vms" {
-  value = local.output_vms
+  description = "A map of all created VMs with their metadata including ssh config, netwrok"
+  value       = local.output_vms
 }
 
 
 output "master_vm" {
-  value = [for name, cfg in local.output_vms : merge(cfg, { name = name }) if cfg.is_master][0]
+  description = "Filtered master VM attributes from all VMs (single object)"
+  value       = [for name, cfg in local.output_vms : merge(cfg, { name = name }) if cfg.type == "master"][0]
 }
 
 
 output "worker_vms" {
-  value = { for name, cfg in local.output_vms : name => cfg if !cfg.is_master }
+  description = "Filtered worker VMs attributes from all VMs (list of objects)"
+  value       = { for name, cfg in local.output_vms : name => cfg if cfg.type == "worker" }
+}
+
+
+output "app_dns_domain" {
+  description = "Base domain of the running web application"
+  value       = local.network.app_dns_domain
 }

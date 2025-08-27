@@ -1,6 +1,8 @@
 locals {
   k3s_url = "https://${local.master_vm_cfg.ssh.host}:${local.master_vm_cfg.init_script_cfg.vars.k3s_port}"
 
+  init_scripts_dir = "${path.module}/init_scripts"
+
   master_vm_cfg = {
     ssh = local.vm_cluster.master_vm.ssh_cfg
     init_script_cfg = {
@@ -35,7 +37,7 @@ resource "local_file" "init_scripts" {
     master = local.master_vm_cfg
   })
 
-  content  = templatefile("${path.module}/init_scripts/${each.value.init_script_cfg.template}", each.value.init_script_cfg.vars)
+  content  = templatefile("${local.init_scripts_dir}/${each.value.init_script_cfg.template}", each.value.init_script_cfg.vars)
   filename = "${path.module}/.tmp/${each.key}.sh"
 }
 
@@ -62,7 +64,10 @@ resource "null_resource" "k3s_server" {
   }
 
   provisioner "remote-exec" {
-    script = local_file.init_scripts["master"].filename
+    scripts = [
+      local_file.init_scripts["master"].filename,
+      "${local.init_scripts_dir}/netplan_apply.sh"
+    ]
   }
 }
 
@@ -86,7 +91,10 @@ resource "null_resource" "k3s_agent" {
   }
 
   provisioner "remote-exec" {
-    script = local_file.init_scripts[each.key].filename
+    scripts = [
+      local_file.init_scripts[each.key].filename,
+
+    ]
   }
 }
 
@@ -106,3 +114,45 @@ data "external" "k3s_kubeconfig" {
     path          = "/etc/rancher/k3s/k3s.yaml"
   }
 }
+
+
+resource "null_resource" "github_runner" {
+  count = local.init_runner ? 1 : 0
+
+  triggers = {
+    reg_token   = var.github_runner_registration_token
+    private_key = sha1(file(local.vm_cluster.vms.github-runner.ssh_cfg.key_path))
+  }
+
+  connection {
+    type        = "ssh"
+    host        = nonsensitive(local.vm_cluster.vms.github-runner.ssh_cfg.host)
+    user        = nonsensitive(local.vm_cluster.vms.github-runner.ssh_cfg.username)
+    private_key = nonsensitive(file(local.vm_cluster.vms.github-runner.ssh_cfg.key_path))
+  }
+
+  provisioner "remote-exec" {
+    inline = [templatefile("${local.init_scripts_dir}/github_runner.sh.tftpl", {
+      reg_token   = nonsensitive(var.github_runner_registration_token)
+      runner_name = "theproject-runner-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+    })]
+  }
+}
+
+
+# resource "null_resource" "github_runner_docker" {
+#   triggers = {
+#     private_key = sha1(file(local.vm_cluster.vms.github-runner.ssh_cfg.key_path))
+#   }
+
+#   connection {
+#     type        = "ssh"
+#     host        = nonsensitive(local.vm_cluster.vms.github-runner.ssh_cfg.host)
+#     user        = nonsensitive(local.vm_cluster.vms.github-runner.ssh_cfg.username)
+#     private_key = nonsensitive(file(local.vm_cluster.vms.github-runner.ssh_cfg.key_path))
+#   }
+
+#   provisioner "remote-exec" {
+#     script = "${local.init_scripts_dir}/install_docker.sh"
+#   }
+# }

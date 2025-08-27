@@ -2,13 +2,13 @@
 
 set -euo pipefail
 
-MACHINES="$(printf '%s' 'dGhlcHJvamVjdC1kZXYtZ2l0aHViLXJ1bm5lcix0aGVwcm9qZWN0LWRldi1tYXN0ZXIsdGhlcHJvamVjdC1kZXYtd29ya2VyLTAsdGhlcHJvamVjdC1kZXYtd29ya2VyLTE=' | base64 -d)"
-NETWORK_NAME="$(printf '%s' 'dGhlcHJvamVjdC1kZXYtbmV0' | base64 -d)"
+MACHINES="$(printf '%s' '${base64encode(machines)}' | base64 -d)"
+NETWORK_NAME="$(printf '%s' '${base64encode(network_name)}' | base64 -d)"
 SEPARATOR=","
 
 IFS="$SEPARATOR" read -ra machines_list <<< "$MACHINES"
 
-for m in "${machines_list[@]}"; do
+for m in "$${machines_list[@]}"; do
     echo "Remove $m (included storage)"
     virsh -c qemu:///system destroy $m || true
     virsh -c qemu:///system undefine $m --remove-all-storage

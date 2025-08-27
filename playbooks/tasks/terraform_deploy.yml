@@ -1,21 +1,75 @@
-- name: Validate inputs
-  ansible.builtin.assert:
-    that:
-      - component is defined
-      - component | trim | length > 1
-    fail_msg: Input variable "component" with length >1 is required.
+---
+- name: Ensure project exists - {{ proj.name }}
+  ansible.builtin.stat:
+    path: "{{ proj.path }}"
+  register: proj_stat
 
+- name: Fail if project path is missing - {{ proj.name }}
+  ansible.builtin.fail:
+    msg: "Project {{ proj.name }} path '{{ proj.path }}' does not exist."
+  when: not proj_stat.stat.exists
 
-- name: Terraform Init
-  vars:
-    ansible_failed_task_message: 'Custom fail: {{ init_out.stderr_lines }}'
-  ansible.builtin.shell: |
-    terraform -chdir="{{ global_vars.infra_dir }}/{{ component }}/tf" init
-  register: init_out
+- name: Create artifact dir for {{ proj.name }}
+  ansible.builtin.file:
+    path: "{{ artifacts_root_abs }}/{{ proj.name }}"
+    state: directory
+    mode: "0755"
 
+- name: Terraform init - {{ proj.name }}
+  ansible.builtin.command:
+    cmd: bash ../../scripts/init.sh {{ proj.name }}
+    chdir: "{{ proj.path }}"
+  environment: "{{ tf_env }}"
+  register: tf_init
+  changed_when: "'successfully initialized' in (tf_init.stdout | lower) or 'initialized' in (tf_init.stderr | lower)"
 
-# - name: Fail on Terraform Init error
-#   when: init_out.stderr_lines | length > 0
-#   ansible.builtin.fail:
-#     msg: 'Errors: {{ init_out.stderr_lines | join("; ") }}'
+- name: Terraform validate - {{ proj.name }}
+  ansible.builtin.command:
+    cmd: terraform validate
+    chdir: "{{ proj.path }}"
+  environment: "{{ tf_env }}"
 
+- name: Terraform plan (binary) - {{ proj.name }}
+  ansible.builtin.command:
+    cmd: terraform plan -input=false -out "{{ artifacts_root_abs }}/{{ proj.name }}/plan.tfplan"
+    chdir: "{{ proj.path }}"
+  environment: "{{ tf_env }}"
+  register: tf_plan_bin
+  changed_when: true
+
+- name: Show human-readable plan in console - {{ proj.name }}
+  ansible.builtin.command:
+    cmd: terraform show -no-color "{{ artifacts_root_abs }}/{{ proj.name }}/plan.tfplan"
+    chdir: "{{ proj.path }}"
+  environment: "{{ tf_env }}"
+  register: tf_plan_txt
+  changed_when: false
+
+- name: Display plan output - {{ proj.name }}
+  ansible.builtin.debug:
+    msg: "{{ tf_plan_txt.stdout_lines }}"
+
+- name: Pause for manual review/confirmation - {{ proj.name }}
+  ansible.builtin.pause:
+    prompt: "Type 'apply' to apply {{ proj.name }}, 'skip' to skip, or anything else to re-prompt."
+  register: user_choice
+  until: user_choice.user_input in ['apply', 'skip']
+  retries: 3
+  delay: 0
+
+- name: Apply plan - {{ proj.name }}
+  ansible.builtin.command:
+    cmd: terraform apply -input=false "{{ artifacts_root_abs }}/{{ proj.name }}/plan.tfplan"
+    chdir: "{{ proj.path }}"
+  environment: "{{ tf_env }}"
+  when: user_choice.user_input == 'apply'
+
+- name: Display terraform apply output - {{ proj.name }}
+  ansible.builtin.debug:
+    msg: "{{ tf_apply.stdout_lines }}"
+  when: user_choice.user_input == 'apply'
+
+- name: Skipped apply - {{ proj.name }}
+  ansible.builtin.debug:
+    msg: "Skipped applying {{ proj.name }}."
+  when: user_choice.user_input == 'skip'

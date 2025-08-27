@@ -13,7 +13,7 @@ resource "kubernetes_manifest" "trivy_namespace" {
 
 
 resource "helm_release" "trivy_operator" {
-  depends_on = [kubernetes_manifest.trivy_ns]
+  depends_on = [kubernetes_manifest.trivy_namespace]
 
   name             = "trivy-operator"
   repository       = "https://aquasecurity.github.io/helm-charts"

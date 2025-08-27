@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -euo pipefail
+
+REG_TOKEN="$(printf '%s' '${base64encode(reg_token)}' | base64 -d)"
+RUNNER_NAME="$(printf '%s' '${base64encode(runner_name)}' | base64 -d)"
+RUNNER_RELEASE_ARCHIVE=actions-runner-linux-x64-2.328.0.tar.gz
+
+mkdir -p actions-runner
+cd actions-runner
+
+if [ ! -f "$RUNNER_RELEASE_ARCHIVE" ]
+then
+    curl -o $RUNNER_RELEASE_ARCHIVE -L https://github.com/actions/runner/releases/download/v2.328.0/$RUNNER_RELEASE_ARCHIVE
+fi
+echo "01066fad3a2893e63e6ca880ae3a1fad5bf9329d60e77ee15f2b97c148c3cd4e $RUNNER_RELEASE_ARCHIVE" | sha256sum
+
+tar xzf ./$RUNNER_RELEASE_ARCHIVE
+
+sudo apt install -y libicu74
+sudo ./bin/installdependencies.sh
+
+sudo ./svc.sh stop || true
+sudo ./svc.sh uninstall || true
+./config.sh remove --token $REG_TOKEN --unattended
+
+./config.sh --url https://github.com/martin356/project-24601-private \
+    --token $REG_TOKEN --name $RUNNER_NAME --labels "self-hosted,$RUNNER_NAME" --unattended --replace
+
+sudo ./svc.sh install
+sudo ./svc.sh start

@@ -4,6 +4,15 @@ hostname: ${hostname}
 disable_root: true
 ssh_pwauth: true
 
+network:
+  version: 2
+  ethernets:
+    eth0:
+      match:
+        macaddress: ${mac_addr}
+      set-name: eth0
+      dhcp4: true
+
 users:
   - name: ${username}
     sudo: ALL=(ALL) NOPASSWD:ALL

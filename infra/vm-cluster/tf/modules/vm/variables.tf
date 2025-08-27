@@ -36,6 +36,25 @@ variable "os_image_uri" {
 }
 
 
-variable "network_id" {
+variable "network" {
+  type = object({
+    net_id   = string
+    net_name = string
+    ip_addr  = string
+    mac_addr = string
+  })
+}
+
+
+variable "filesystems" {
+  type = list(object({
+    source   = string
+    target   = string
+    readonly = optional(bool, true)
+  }))
+}
+
+
+variable "vm_username" {
   type = string
 }

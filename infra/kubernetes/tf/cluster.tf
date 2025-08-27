@@ -26,3 +26,10 @@ resource "kubernetes_manifest" "service" {
 
   manifest = local.manifests.service
 }
+
+
+resource "kubernetes_manifest" "ingress" {
+  depends_on = [kubernetes_manifest.service]
+
+  manifest = local.manifests.ingress
+}

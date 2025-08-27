@@ -37,15 +37,27 @@ locals {
       port      = 80
       node_port = 30080
     }
+  }
 
+  ingress_manifest_cfg = {
+    key      = "ingress"
+    filename = "ingress.yml"
+    vars = {
+      namespace    = local.namespaces.app
+      name         = local.app_name
+      host         = local.vm_cluster.app_dns_domain
+      service_name = local.service_manifest_cfg.vars.name
+      service_port = local.service_manifest_cfg.vars.port
+    }
   }
 
   manifests = {
     for cfg in [
       local.configmap_manifest_cfg,
       local.deployment_manifest_cfg,
-      local.service_manifest_cfg
-    ] : cfg.key => yamldecode(templatefile("${path.module}/templates/${cfg.filename}", cfg.vars))
+      local.service_manifest_cfg,
+      local.ingress_manifest_cfg
+    ] : cfg.key => yamldecode(templatefile("${path.module}/manifests/${cfg.filename}", cfg.vars))
   }
 
   istio_cfg = {
