@@ -1,5 +1,5 @@
 ## Overview
-This infrastructure provisions initialisation of the VMs. It runs scripts on a VM which installs required packages, tools and set environment.
+This infrastructure provisions initialisation of the VMs. It runs scripts on a VM which installs required packages, tools and set environment. Initialisation of the runner is optional. Terraform asks for input variable `registration token`. Since you do not have the registration token, leave the value empty.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

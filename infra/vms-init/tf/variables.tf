@@ -4,6 +4,7 @@ variable "env" {
 
 
 variable "github_runner_registration_token" {
-  type      = string
-  sensitive = true
+  description = "Github runner registration token. Leave empty in case the runner registration is not required"
+  type        = string
+  sensitive   = true
 }
