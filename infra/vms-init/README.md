@@ -45,7 +45,7 @@ This infrastructure provisions initialisation of the VMs. It runs scripts on a V
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_env"></a> [env](#input\_env) | n/a | `string` | n/a | yes |
-| <a name="input_github_runner_registration_token"></a> [github\_runner\_registration\_token](#input\_github\_runner\_registration\_token) | n/a | `string` | n/a | yes |
+| <a name="input_github_runner_registration_token"></a> [github\_runner\_registration\_token](#input\_github\_runner\_registration\_token) | Github runner registration token. Leave empty in case the runner registration is not required | `string` | n/a | yes |
 
 ## Outputs
 
